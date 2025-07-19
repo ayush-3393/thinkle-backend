@@ -7,6 +7,7 @@ import com.thinkle_backend.models.WordOfTheDay;
 import com.thinkle_backend.repositories.WordOfTheDayRepository;
 import com.thinkle_backend.services.WordHintService;
 import com.thinkle_backend.services.WordOfTheDayService;
+import com.thinkle_backend.utils.WordUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -40,12 +41,12 @@ public class WordOfTheDayServiceImpl implements WordOfTheDayService {
                 this.wordOfTheDayRepository.findByGeneratedAt(LocalDate.now());
 
         if(wordOfTheDayOptional.isPresent()){
-            throw new WordAlreadyExistsException("Word Already Generated for today!");
+            return wordOfTheDayOptional.get();
         }
 
         String generateWordOfTheDay = this.wordOfTheDayGenerator.generateWordOfTheDay();
 
-        if(!isValidWordOfTheDay(generateWordOfTheDay)){
+        if(!WordUtils.isValidWord(generateWordOfTheDay, MAX_WORD_LENGTH)){
             throw new InvalidWordException("Invalid Word Generated!: " + generateWordOfTheDay);
         }
 
@@ -60,24 +61,4 @@ public class WordOfTheDayServiceImpl implements WordOfTheDayService {
 
         return savedWordOfTheDay;
     }
-
-    private boolean isValidWordOfTheDay(String word) {
-        if (word == null || word.isEmpty()) {
-            return false;
-        }
-
-        if(word.length() > MAX_WORD_LENGTH){
-            return false;
-        }
-
-        for (int i = 0; i < word.length(); i++) {
-            char c = word.charAt(i);
-            if (!Character.isLetter(c)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
 }

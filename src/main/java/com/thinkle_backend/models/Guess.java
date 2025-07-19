@@ -25,7 +25,7 @@ public class Guess extends BaseModel {
     private List<Integer> correctPositionIndices;
 
     @ElementCollection
-    private List<Integer> wrongPositionIndices;
+    private List<Integer> missedPositionIndices;
 
     private LocalDateTime timestamp;
 }

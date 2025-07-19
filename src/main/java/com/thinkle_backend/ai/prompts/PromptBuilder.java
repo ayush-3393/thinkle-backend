@@ -1,5 +1,6 @@
 package com.thinkle_backend.ai.prompts;
 
+import com.thinkle_backend.models.enums.GameStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -21,6 +22,21 @@ public class PromptBuilder {
         return promptService.renderPrompt(template, Map.of(
                 "word", solutionWord,
                 "hintType", hintType
+        ));
+    }
+
+    public String generateReplyForCurrentGuess(String currentGuess,
+                                               String wordToGuess,
+                                               GameStatus gameStatus,
+                                               Integer remainingLives,
+                                               Long hintsUsed) {
+        String template = promptService.loadPromptTemplate("reply_to_guess.txt");
+        return promptService.renderPrompt(template, Map.of(
+                "word", wordToGuess,
+                "guess", currentGuess,
+                "status", gameStatus.toString(),
+                "lives", remainingLives.toString(),
+                "hintsUsed", hintsUsed.toString()
         ));
     }
 }

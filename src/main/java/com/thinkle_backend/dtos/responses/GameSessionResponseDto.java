@@ -15,5 +15,5 @@ public class GameSessionResponseDto {
     private Integer remainingLives;
     private GameStatus gameStatus;
     private HintsInfoForSession hintsInfo;
-    private List<Guess> guesses;
+    private List<GuessResponseDto> guesses;
 }

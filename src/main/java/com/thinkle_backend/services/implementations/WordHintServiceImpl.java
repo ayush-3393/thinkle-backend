@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class WordHintServiceImpl implements WordHintService {
@@ -47,124 +46,124 @@ public class WordHintServiceImpl implements WordHintService {
         this.hintRepository = hintRepository;
     }
 
-
     @Override
     public void createHintsForWordOfTheDay(WordOfTheDay wordOfTheDay) {
+        validateWordOfTheDayExists(wordOfTheDay);
 
-        Optional<Boolean> wordExistsCheckOptional =
-                this.wordOfTheDayRepository.existsBySolutionWordIgnoreCase(wordOfTheDay.getSolutionWord());
+        List<HintType> hintTypes = fetchAllHintTypes();
 
-        if(wordExistsCheckOptional.isEmpty() || !wordExistsCheckOptional.get()){
-            throw new WordDoesNotExistsException("Word of the day does not exist");
-        }
+        for (HintType hintType : hintTypes) {
+            ensureHintNotExists(wordOfTheDay, hintType);
 
-        List<HintType> hintTypes = this.hintTypeRepository.findAll();
-
-        if(hintTypes.isEmpty()){
-            throw new HintTypeDoesNotExistsException("No hint types were found");
-        }
-
-        for(HintType hintType : hintTypes){
-
-            Optional<WordHint> byWordOfTheDayAndHintType =
-                    this.wordHintRepository.findByWordOfTheDayAndHintType(wordOfTheDay, hintType);
-
-            if(byWordOfTheDayAndHintType.isPresent()){
-                throw new HintAlreadyExists(
-                        "Hint for the type " + hintType.getHintType() + " already exists for the word of the day"
-                );
-            }
-
-            String generatedHintText =
-                    this.hintGenerator.generateHint(wordOfTheDay.getSolutionWord(), hintType.getHintType());
+            String generatedHintText = hintGenerator.generateHint(
+                    wordOfTheDay.getSolutionWord(), hintType.getHintType()
+            );
 
             WordHint wordHint = new WordHint();
             wordHint.setHintType(hintType);
             wordHint.setWordOfTheDay(wordOfTheDay);
             wordHint.setText(generatedHintText);
-
-            WordHint savedWordHint = this.wordHintRepository.save(wordHint);
+            wordHintRepository.save(wordHint);
         }
     }
 
     @Override
     @Transactional
-    public String getHintForHintType(String hintType, Long userId) {
+    public String getHintForHintType(String hintTypeStr, Long userId) {
+        GameSession session = getValidGameSession(userId);
 
-        // 1. Fetch game session
-        Optional<GameSession> gameSessionOptional =
-                this.gameSessionRepository.findByUserIdAndGameDate(userId, LocalDate.now());
+        validateLives(session);
+        validateHintUsageLimit(userId);
+        WordOfTheDay word = getTodayWordOfTheDay();
+        HintType hintType = getHintType(hintTypeStr);
+        ensureHintNotUsed(session, hintType);
 
-        if(gameSessionOptional.isEmpty()){
-            throw new GameSessionNotFoundException("Game session was not found");
-        }
+        WordHint wordHint = getWordHint(word, hintType);
+        deductLife(session);
+        saveHintUsage(session, wordHint);
 
-        GameSession gameSession = gameSessionOptional.get();
-
-        // 2. Validate remaining lives
-        if(gameSession.getRemainingLives() < MIN_REMAINING_LIVES_TO_USE_HINT){
-            throw new CanNotUseHintException("Not enough lives remaining!");
-        }
-
-        // 3. Validate daily hint usage limit
-        Long countOfHintsUsedByTheUserToday =
-                this.hintRepository.countByGameSession_User_IdAndGameSession_GameDate(userId, LocalDate.now());
-
-        if(countOfHintsUsedByTheUserToday >= MAX_LIMIT_OF_HINTS_USAGE_PER_USER_PER_DAY){
-            throw new CanNotUseHintException("Maximum number of hints (2) used for today!");
-        }
-
-
-        // 4. Fetch word of the day
-        Optional<WordOfTheDay> wordOfTheDayOptional =
-                this.wordOfTheDayRepository.findByGeneratedAt(LocalDate.now());
-
-        if(wordOfTheDayOptional.isEmpty()){
-            throw new WordDoesNotExistsException("Word of the day does not exist");
-        }
-
-        WordOfTheDay wordOfTheDay = wordOfTheDayOptional.get();
-
-        // 5. Fetch hint type
-        Optional<HintType> hintTypeOptional = this.hintTypeRepository.findByHintTypeIgnoreCase(hintType);
-
-        if(hintTypeOptional.isEmpty()){
-            throw new HintTypeDoesNotExistsException("Requested Hint Type does not exist");
-        }
-
-        HintType type = hintTypeOptional.get();
-
-        // 6. Check if this hint type is already used in this session
-        if (this.hintRepository.existsByGameSession_IdAndWordHint_HintType_Id(gameSession.getId(), type.getId())) {
-            throw new CanNotUseHintException("Hint of this type already used in this session!");
-        }
-
-        // 7. Fetch WordHint
-        Optional<WordHint> optionalWordHint =
-                this.wordHintRepository.findByWordOfTheDayAndHintType(wordOfTheDay, type);
-
-        if(optionalWordHint.isEmpty()){
-            throw new HintDoesNotExistsException("Hint for this type and today's word does not exist");
-        }
-
-        WordHint wordHint = optionalWordHint.get();
-
-        // 8. Update game session lives
-        Integer remainingLives = gameSession.getRemainingLives() - LIFE_COST_PER_HINT;
-
-        gameSession.setRemainingLives(remainingLives);
-        gameSession.setUpdatedAt(LocalDateTime.now());
-
-        this.gameSessionRepository.save(gameSession);
-
-        // 9. Save hint usage
-        Hint hint = new Hint();
-        hint.setWordHint(wordHint);
-        hint.setUsedAt(LocalDateTime.now());
-        hint.setGameSession(gameSession);
-        this.hintRepository.save(hint);
-
-        // 10. Return hint text
         return wordHint.getText();
     }
+
+    // ---------------------- Private Helpers ---------------------------- //
+
+    private void validateWordOfTheDayExists(WordOfTheDay wordOfTheDay) {
+        if (!wordOfTheDayRepository
+                .existsBySolutionWordIgnoreCase(wordOfTheDay.getSolutionWord())
+                .orElse(false)) {
+            throw new WordDoesNotExistsException("Word of the day does not exist");
+        }
+    }
+
+    private List<HintType> fetchAllHintTypes() {
+        List<HintType> hintTypes = hintTypeRepository.findAll();
+        if (hintTypes.isEmpty()) {
+            throw new HintTypeDoesNotExistsException("No hint types were found");
+        }
+        return hintTypes;
+    }
+
+    private void ensureHintNotExists(WordOfTheDay word, HintType type) {
+        if (wordHintRepository.findByWordOfTheDayAndHintType(word, type).isPresent()) {
+            throw new HintAlreadyExists(
+                    "Hint for type " + type.getHintType() + " already exists for this word"
+            );
+        }
+    }
+
+    private GameSession getValidGameSession(Long userId) {
+        return gameSessionRepository
+                .findByUserIdAndGameDate(userId, LocalDate.now())
+                .orElseThrow(() -> new GameSessionNotFoundException("Game session was not found"));
+    }
+
+    private void validateLives(GameSession session) {
+        if (session.getRemainingLives() < MIN_REMAINING_LIVES_TO_USE_HINT) {
+            throw new CanNotUseHintException("Not enough lives remaining!");
+        }
+    }
+
+    private void validateHintUsageLimit(Long userId) {
+        long hintsUsed = hintRepository
+                .countByGameSession_User_IdAndGameSession_GameDate(userId, LocalDate.now());
+        if (hintsUsed >= MAX_LIMIT_OF_HINTS_USAGE_PER_USER_PER_DAY) {
+            throw new CanNotUseHintException("Maximum number of hints used for today!");
+        }
+    }
+
+    private WordOfTheDay getTodayWordOfTheDay() {
+        return wordOfTheDayRepository.findByGeneratedAt(LocalDate.now())
+                .orElseThrow(() -> new WordDoesNotExistsException("Today's word not found"));
+    }
+
+    private HintType getHintType(String hintTypeStr) {
+        return hintTypeRepository.findByHintTypeIgnoreCase(hintTypeStr)
+                .orElseThrow(() -> new HintTypeDoesNotExistsException("Hint type does not exist"));
+    }
+
+    private void ensureHintNotUsed(GameSession session, HintType type) {
+        if (hintRepository.existsByGameSession_IdAndWordHint_HintType_Id(session.getId(), type.getId())) {
+            throw new CanNotUseHintException("Hint of this type already used in this session!");
+        }
+    }
+
+    private WordHint getWordHint(WordOfTheDay word, HintType type) {
+        return wordHintRepository.findByWordOfTheDayAndHintType(word, type)
+                .orElseThrow(() -> new HintDoesNotExistsException("Hint for this type and word not found"));
+    }
+
+    private void deductLife(GameSession session) {
+        session.setRemainingLives(session.getRemainingLives() - LIFE_COST_PER_HINT);
+        session.setUpdatedAt(LocalDateTime.now());
+        gameSessionRepository.save(session);
+    }
+
+    private void saveHintUsage(GameSession session, WordHint wordHint) {
+        Hint hint = new Hint();
+        hint.setGameSession(session);
+        hint.setWordHint(wordHint);
+        hint.setUsedAt(LocalDateTime.now());
+        hintRepository.save(hint);
+    }
 }
+
