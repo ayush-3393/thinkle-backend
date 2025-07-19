@@ -1,8 +1,6 @@
 package com.thinkle_backend.models;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,15 +14,11 @@ import java.time.LocalDateTime;
 @Entity
 public class Hint extends BaseModel {
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     private GameSession gameSession;
 
-    @ManyToOne
-    @JoinColumn(name = "hint_type_id", nullable = false)
-    private HintType hintType;
-
-    @Lob
-    private String text;
+    @ManyToOne(optional = false)
+    private WordHint wordHint;
 
     private LocalDateTime usedAt;
 }
