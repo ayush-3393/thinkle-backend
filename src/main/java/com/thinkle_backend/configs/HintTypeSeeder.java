@@ -19,7 +19,7 @@ public class HintTypeSeeder {
     }
 
     private void insertIfNotExists(HintTypeRepository repo, String type, String displayName) {
-        if (repo.existsByHintType(type).isPresent() && !repo.existsByHintType(type).get()) {
+        if (repo.existsByHintTypeIgnoreCase(type).isPresent() && !repo.existsByHintTypeIgnoreCase(type).get()) {
             HintType hintType = new HintType();
             hintType.setHintType(type);
             hintType.setDisplayName(displayName);

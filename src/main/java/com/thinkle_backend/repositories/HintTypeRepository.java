@@ -8,5 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface HintTypeRepository extends JpaRepository<HintType, Long> {
-    Optional<Boolean> existsByHintType(String hintType);
+    Optional<Boolean> existsByHintTypeIgnoreCase(String hintType);
+
+    Optional<HintType> findByHintTypeIgnoreCase(String hintType);
 }
