@@ -1,0 +1,16 @@
+package com.thinkle_backend.ai.prompts;
+
+import org.springframework.stereotype.Service;
+
+@Service
+public class PromptBuilder {
+    private final PromptService promptService;
+
+    public PromptBuilder(PromptService promptService) {
+        this.promptService = promptService;
+    }
+
+    public String generateWordPrompt() {
+        return promptService.loadPromptTemplate("generate_word.txt");
+    }
+}
