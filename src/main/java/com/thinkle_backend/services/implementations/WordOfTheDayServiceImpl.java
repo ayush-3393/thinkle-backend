@@ -5,7 +5,9 @@ import com.thinkle_backend.exceptions.InvalidWordException;
 import com.thinkle_backend.exceptions.WordAlreadyExistsException;
 import com.thinkle_backend.models.WordOfTheDay;
 import com.thinkle_backend.repositories.WordOfTheDayRepository;
+import com.thinkle_backend.services.WordHintService;
 import com.thinkle_backend.services.WordOfTheDayService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -20,14 +22,18 @@ public class WordOfTheDayServiceImpl implements WordOfTheDayService {
 
     private final WordOfTheDayRepository wordOfTheDayRepository;
     private final WordOfTheDayGenerator wordOfTheDayGenerator;
+    private final WordHintService wordHintService;
 
     public WordOfTheDayServiceImpl(WordOfTheDayRepository wordOfTheDayRepository,
-                                   WordOfTheDayGenerator wordOfTheDayGenerator) {
+                                   WordOfTheDayGenerator wordOfTheDayGenerator,
+                                   WordHintService wordHintService) {
         this.wordOfTheDayRepository = wordOfTheDayRepository;
         this.wordOfTheDayGenerator = wordOfTheDayGenerator;
+        this.wordHintService = wordHintService;
     }
 
     @Override
+    @Transactional
     public WordOfTheDay generateWordOfTheDay() {
 
         Optional<WordOfTheDay> wordOfTheDayOptional =
@@ -47,7 +53,12 @@ public class WordOfTheDayServiceImpl implements WordOfTheDayService {
         wordOfTheDay.setSolutionWord(generateWordOfTheDay.trim().toUpperCase());
         wordOfTheDay.setGeneratedAt(LocalDate.now());
 
-        return this.wordOfTheDayRepository.save(wordOfTheDay);
+        WordOfTheDay savedWordOfTheDay = this.wordOfTheDayRepository.save(wordOfTheDay);
+
+        // generate the hints for the word
+        this.wordHintService.createHintsForWordOfTheDay(savedWordOfTheDay);
+
+        return savedWordOfTheDay;
     }
 
     private boolean isValidWordOfTheDay(String word) {

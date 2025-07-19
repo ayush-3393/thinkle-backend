@@ -54,6 +54,36 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.NOT_ACCEPTABLE);
     }
 
+    @ExceptionHandler(WordDoesNotExistsException.class)
+    public ResponseEntity<BaseResponse<Void>> handleWordDoesNotExist(WordDoesNotExistsException ex) {
+        BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(HintAlreadyExists.class)
+    public ResponseEntity<BaseResponse<Void>> handleHintAlreadyExists(HintAlreadyExists ex) {
+        BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(GameSessionNotFoundException.class)
+    public ResponseEntity<BaseResponse<Void>> handleGameSessionNotFound(GameSessionNotFoundException ex) {
+        BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(CanNotUseHintException.class)
+    public ResponseEntity<BaseResponse<Void>> handleCanNotUseHint(CanNotUseHintException ex) {
+        BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(HintDoesNotExistsException.class)
+    public ResponseEntity<BaseResponse<Void>> handleHintDoesNotExist(HintDoesNotExistsException ex) {
+        BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<BaseResponse<Void>> handleGenericException(Exception ex) {
         BaseResponse<Void> response = BaseResponse.failure("Something went wrong: " + ex.getMessage());

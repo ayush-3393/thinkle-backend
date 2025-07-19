@@ -10,4 +10,5 @@ import java.util.Optional;
 @Repository
 public interface WordOfTheDayRepository extends JpaRepository<WordOfTheDay, Long> {
     Optional<WordOfTheDay> findByGeneratedAt(LocalDate date);
+    Optional<Boolean> existsBySolutionWordIgnoreCase(String solutionWord);
 }
