@@ -84,6 +84,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<BaseResponse<Void>> handleUserNotFound(UserNotFoundException ex) {
+        BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<BaseResponse<Void>> handleGenericException(Exception ex) {
         BaseResponse<Void> response = BaseResponse.failure("Something went wrong: " + ex.getMessage());
