@@ -1,5 +1,6 @@
 package com.thinkle_backend.exceptions;
 
+import com.thinkle_backend.ai.exceptions.AiMessageParserException;
 import com.thinkle_backend.dtos.responses.BaseResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,24 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseResponse<Void>> handleHintTypeAlreadyActive(HintTypeAlreadyActiveException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(AiMessageParserException.class)
+    public ResponseEntity<BaseResponse<Void>> handleAiMessageParser(AiMessageParserException ex) {
+        BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(WordAlreadyExistsException.class)
+    public ResponseEntity<BaseResponse<Void>> handleWordAlreadyExists(WordAlreadyExistsException ex) {
+        BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(InvalidWordException.class)
+    public ResponseEntity<BaseResponse<Void>> handleInvalidWord(InvalidWordException ex) {
+        BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.NOT_ACCEPTABLE);
     }
 
     @ExceptionHandler(Exception.class)
