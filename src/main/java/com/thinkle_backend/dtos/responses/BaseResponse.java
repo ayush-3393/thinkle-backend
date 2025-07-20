@@ -15,22 +15,22 @@ import java.util.List;
 public class BaseResponse<T> {
     private int statusCode;  // 0 = success, 1 = failure
     private String message;
-    private List<T> data;
+    private T data;
 
 
     public static <T> BaseResponse<T> success(T data) {
-        return new BaseResponse<>(0, "Success", List.of(data));
+        return new BaseResponse<>(0, "Success", data);
     }
 
     public static <T> BaseResponse<T> success(String message, T data) {
-        return new BaseResponse<>(0, message, List.of(data));
+        return new BaseResponse<>(0, message, data);
     }
 
     public static <T> BaseResponse<T> failure(String message) {
-        return new BaseResponse<>(1, message, Collections.emptyList());
+        return new BaseResponse<>(1, message, null);
     }
 
     public static <T> BaseResponse<T> failure(String message, T data) {
-        return new BaseResponse<>(1, message, List.of(data));
+        return new BaseResponse<>(1, message, data);
     }
 }

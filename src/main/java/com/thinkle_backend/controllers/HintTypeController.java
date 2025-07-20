@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/hint-types")
+@CrossOrigin(origins = "http://localhost:3000")
 public class HintTypeController {
 
     private final HintTypeService hintTypeService;
@@ -54,9 +55,9 @@ public class HintTypeController {
     public ResponseEntity<BaseResponse<HintType>> reActivateHintType(
             @Valid @RequestBody ReActivateHintTypeRequestDto reActivateHintTypeRequestDto
     ){
-        HintType deletedHintType = this.hintTypeService.reActivateHintType(reActivateHintTypeRequestDto.getType());
+        HintType reActivateHintType = this.hintTypeService.reActivateHintType(reActivateHintTypeRequestDto.getType());
         return new ResponseEntity<BaseResponse<HintType>>(
-                BaseResponse.success("Successfully Reactivated", deletedHintType),
+                BaseResponse.success("Successfully Reactivated", reActivateHintType),
                 HttpStatus.OK
         );
     }
