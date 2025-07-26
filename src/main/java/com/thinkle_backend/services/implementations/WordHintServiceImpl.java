@@ -53,13 +53,9 @@ public class WordHintServiceImpl implements WordHintService {
         this.hintRepository = hintRepository;
     }
 
-    /**
-     * This method is synchronized to prevent race conditions if multiple threads try to
-     * generate hints for the same WordOfTheDay concurrently.
-     */
     @Override
     @Transactional
-    public synchronized void createHintsForWordOfTheDay(WordOfTheDay wordOfTheDay) {
+    public void createHintsForWordOfTheDay(WordOfTheDay wordOfTheDay) {
         validateWordOfTheDayExists(wordOfTheDay);
 
         List<HintType> hintTypes = fetchAllHintTypes();
@@ -79,8 +75,11 @@ public class WordHintServiceImpl implements WordHintService {
                     wordHintRepository.save(wordHint);
                 }
             } catch (DataIntegrityViolationException e) {
-                logger.warn("Concurrent creation detected: Hint for word '{}' and type '{}' already exists. Skipping creation.",
+                logger.warn("Concurrent creation detected: Hint already exists for word '{}' and type '{}'. Skipping.",
                         wordOfTheDay.getSolutionWord(), hintType.getHintType(), e);
+            } catch (Exception e) {
+                logger.error("Unexpected error while generating hint for type '{}': {}", hintType.getHintType(), e.getMessage(), e);
+                throw new RuntimeException("Hint generation failed. Please try again later.");
             }
         }
     }
@@ -119,10 +118,9 @@ public class WordHintServiceImpl implements WordHintService {
     // ---------------------- Private Helpers ---------------------------- //
 
     private void validateWordOfTheDayExists(WordOfTheDay wordOfTheDay) {
-        if (wordOfTheDay.getId() == null ||
-                !wordOfTheDayRepository.existsById(wordOfTheDay.getId())) {
-            throw new WordDoesNotExistsException("Word of the day does not exist");
-        }
+        wordOfTheDay = wordOfTheDayRepository.findByGeneratedAt(LocalDate.now())
+                .orElseThrow(() -> new WordDoesNotExistsException("Today's word not found"));
+
     }
 
     private List<HintType> fetchAllHintTypes() {
