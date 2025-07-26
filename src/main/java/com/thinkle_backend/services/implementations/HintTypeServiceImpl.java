@@ -3,9 +3,7 @@ package com.thinkle_backend.services.implementations;
 import com.thinkle_backend.dtos.requests.CreateHintTypeRequestDto;
 import com.thinkle_backend.dtos.requests.UpdateHintTypeRequestDto;
 import com.thinkle_backend.dtos.responses.UpdateHintTypeResponseDto;
-import com.thinkle_backend.exceptions.HintTypeAlreadyDeletedException;
-import com.thinkle_backend.exceptions.HintTypeAlreadyExistsException;
-import com.thinkle_backend.exceptions.HintTypeDoesNotExistsException;
+import com.thinkle_backend.exceptions.*;
 import com.thinkle_backend.models.HintType;
 import com.thinkle_backend.repositories.HintTypeRepository;
 import com.thinkle_backend.services.HintTypeService;
@@ -27,13 +25,11 @@ public class HintTypeServiceImpl implements HintTypeService {
     public HintType createHintType(CreateHintTypeRequestDto hintTypeRequestDto) {
         String inputType = hintTypeRequestDto.getType().toUpperCase();
 
-        // Try to fetch existing HintType, regardless of soft delete status
-        Optional<HintType> existingHintTypeOptional = this.hintTypeRepository.findByHintTypeIgnoreCase(inputType);
+        Optional<HintType> existingOptional = hintTypeRepository.findByHintTypeIgnoreCase(inputType);
 
-        if (existingHintTypeOptional.isPresent()) {
-            HintType existingHintType = existingHintTypeOptional.get();
-
-            if (existingHintType.getIsDeleted()) {
+        if (existingOptional.isPresent()) {
+            HintType existing = existingOptional.get();
+            if (Boolean.TRUE.equals(existing.getIsDeleted())) {
                 throw new HintTypeAlreadyDeletedException(
                         "Hint type was deleted, reactivate if required: " + inputType
                 );
@@ -41,110 +37,109 @@ public class HintTypeServiceImpl implements HintTypeService {
             throw new HintTypeAlreadyExistsException("Hint type already exists: " + inputType);
         }
 
-        // Create new if not found
-        HintType hintType = new HintType();
-        hintType.setHintType(inputType);
-        hintType.setDisplayName(hintTypeRequestDto.getDisplayName());
+        HintType newHintType = new HintType();
+        newHintType.setHintType(inputType);
+        newHintType.setDisplayName(hintTypeRequestDto.getDisplayName());
 
-        return this.hintTypeRepository.save(hintType);
+        return hintTypeRepository.save(newHintType);
     }
-
 
     @Override
     public HintType deleteHintType(String hintType) {
-        Optional<HintType> optionalHintType = this.hintTypeRepository.findByHintTypeIgnoreCase(hintType);
+        String normalizedType = hintType.toUpperCase();
+        Optional<HintType> optional = hintTypeRepository.findByHintTypeIgnoreCase(normalizedType);
 
-        if(optionalHintType.isEmpty()){
-            throw new HintTypeDoesNotExistsException("Hint type does not exist: " + hintType);
+        if (optional.isEmpty()) {
+            throw new HintTypeDoesNotExistsException("Hint type does not exist: " + normalizedType);
         }
 
-        HintType type = optionalHintType.get();
+        HintType type = optional.get();
 
-        if(type.getIsDeleted()){
-            throw new HintTypeAlreadyDeletedException("Hint Type was already deleted: " + hintType);
+        if (Boolean.TRUE.equals(type.getIsDeleted())) {
+            throw new HintTypeAlreadyDeletedException("Hint type already deleted: " + normalizedType);
         }
 
         type.softDelete();
+        type.setUpdatedAt(LocalDateTime.now());
 
-        return this.hintTypeRepository.save(type);
+        return hintTypeRepository.save(type);
     }
 
     @Override
     public HintType reActivateHintType(String hintType) {
-        Optional<HintType> optionalHintType = hintTypeRepository.findByHintTypeIgnoreCase(hintType);
-        if (optionalHintType.isEmpty()) {
-            throw new HintTypeDoesNotExistsException("Hint type does not exist: " + hintType);
+        String normalizedType = hintType.toUpperCase();
+        Optional<HintType> optional = hintTypeRepository.findByHintTypeIgnoreCase(normalizedType);
+
+        if (optional.isEmpty()) {
+            throw new HintTypeDoesNotExistsException("Hint type does not exist: " + normalizedType);
         }
 
-        HintType existingHintType = optionalHintType.get();
+        HintType type = optional.get();
 
-        if(!existingHintType.getIsDeleted()){
-            throw new HintTypeAlreadyDeletedException("Hint Type is already active: " + hintType);
+        if (!Boolean.TRUE.equals(type.getIsDeleted())) {
+            throw new HintTypeAlreadyActiveException("Hint type is already active: " + normalizedType);
         }
 
-        existingHintType.setIsDeleted(false);
-        existingHintType.setDeletedAt(null);
-        existingHintType.setUpdatedAt(LocalDateTime.now());
+        type.setIsDeleted(false);
+        type.setDeletedAt(null);
+        type.setUpdatedAt(LocalDateTime.now());
 
-        return this.hintTypeRepository.save(existingHintType);
+        return hintTypeRepository.save(type);
     }
 
     @Override
-    public UpdateHintTypeResponseDto updateHintType(UpdateHintTypeRequestDto updateHintTypeRequestDto) {
-        Optional<HintType> optionalCurrentHintType =
-                hintTypeRepository.findByHintTypeIgnoreCase(updateHintTypeRequestDto.getCurrentType());
+    public UpdateHintTypeResponseDto updateHintType(UpdateHintTypeRequestDto dto) {
+        String currentType = dto.getCurrentType().toUpperCase();
 
-        if (optionalCurrentHintType.isEmpty()) {
-            throw new HintTypeDoesNotExistsException(
-                    "Hint type does not exist: " + updateHintTypeRequestDto.getCurrentType()
-            );
+        Optional<HintType> optionalCurrent = hintTypeRepository.findByHintTypeIgnoreCase(currentType);
+
+        if (optionalCurrent.isEmpty()) {
+            throw new HintTypeDoesNotExistsException("Hint type does not exist: " + currentType);
         }
 
-        HintType currentHintType = optionalCurrentHintType.get();
+        HintType current = optionalCurrent.get();
 
-        if(currentHintType.getIsDeleted()){
-            throw new HintTypeAlreadyDeletedException(
-                    "Hint Type was deleted, reactivate if required: " + currentHintType.getHintType()
-            );
+        if (Boolean.TRUE.equals(current.getIsDeleted())) {
+            throw new HintTypeAlreadyDeletedException("Hint type is deleted, reactivate if required: " + currentType);
         }
 
-        return getUpdateHintTypeResponseDto(updateHintTypeRequestDto, currentHintType);
+        return applyHintTypeUpdate(dto, current);
     }
 
-    private UpdateHintTypeResponseDto getUpdateHintTypeResponseDto(
-            UpdateHintTypeRequestDto updateHintTypeRequestDto,
-            HintType currentHintType
-    ) {
+    private UpdateHintTypeResponseDto applyHintTypeUpdate(UpdateHintTypeRequestDto dto, HintType current) {
+        boolean updated = false;
 
         UpdateHintTypeResponseDto responseDto = new UpdateHintTypeResponseDto();
-        responseDto.setOldHintType(currentHintType);
+        responseDto.setOldHintType(current);
 
-        // Handle type update
-        if (updateHintTypeRequestDto.getUpdatedType() != null &&
-                !updateHintTypeRequestDto.getUpdatedType().equalsIgnoreCase(currentHintType.getHintType())) {
+        // Update type if changed
+        if (dto.getUpdatedType() != null &&
+                !dto.getUpdatedType().equalsIgnoreCase(current.getHintType())) {
 
-            String newType = updateHintTypeRequestDto.getUpdatedType().toUpperCase();
+            String newType = dto.getUpdatedType().toUpperCase();
 
-            Optional<HintType> other = hintTypeRepository.findByHintTypeIgnoreCase(newType);
-            if (other.isPresent()) {
+            Optional<HintType> existingWithNewType = hintTypeRepository.findByHintTypeIgnoreCase(newType);
+            if (existingWithNewType.isPresent()) {
                 throw new HintTypeAlreadyExistsException("Hint type already exists: " + newType);
             }
 
-            currentHintType.setHintType(newType);
+            current.setHintType(newType);
+            updated = true;
         }
 
-        // Handle display name update
-        if (updateHintTypeRequestDto.getUpdatedDisplayName() != null &&
-                !updateHintTypeRequestDto.getUpdatedDisplayName().equals(currentHintType.getDisplayName())) {
-            currentHintType.setDisplayName(updateHintTypeRequestDto.getUpdatedDisplayName());
+        // Update display name if changed
+        if (dto.getUpdatedDisplayName() != null &&
+                !dto.getUpdatedDisplayName().equals(current.getDisplayName())) {
+            current.setDisplayName(dto.getUpdatedDisplayName());
+            updated = true;
         }
 
-        currentHintType.setUpdatedAt(LocalDateTime.now());
+        if (updated) {
+            current.setUpdatedAt(LocalDateTime.now());
+            hintTypeRepository.save(current);
+        }
 
-        this.hintTypeRepository.save(currentHintType);
-
-        responseDto.setUpdatedHintType(currentHintType);
-
+        responseDto.setUpdatedHintType(current);
         return responseDto;
     }
 }

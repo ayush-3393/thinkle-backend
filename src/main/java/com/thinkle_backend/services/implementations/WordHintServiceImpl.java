@@ -9,14 +9,19 @@ import com.thinkle_backend.repositories.*;
 import com.thinkle_backend.services.WordHintService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class WordHintServiceImpl implements WordHintService {
+
+    private static final Logger logger = LoggerFactory.getLogger(WordHintServiceImpl.class);
 
     @Value("${thinkle.game.default.min-life-to-use-hint}")
     private Integer MIN_REMAINING_LIVES_TO_USE_HINT;
@@ -49,23 +54,33 @@ public class WordHintServiceImpl implements WordHintService {
     }
 
     @Override
+    @Transactional
     public void createHintsForWordOfTheDay(WordOfTheDay wordOfTheDay) {
         validateWordOfTheDayExists(wordOfTheDay);
 
         List<HintType> hintTypes = fetchAllHintTypes();
 
         for (HintType hintType : hintTypes) {
-            ensureHintNotExists(wordOfTheDay, hintType);
+            try {
+                if (wordHintRepository.findByWordOfTheDayAndHintType(wordOfTheDay, hintType).isEmpty()) {
+                    String generatedHintText = hintGenerator.generateHint(
+                            wordOfTheDay.getSolutionWord(),
+                            hintType.getHintType()
+                    );
 
-            String generatedHintText = hintGenerator.generateHint(
-                    wordOfTheDay.getSolutionWord(), hintType.getHintType()
-            );
-
-            WordHint wordHint = new WordHint();
-            wordHint.setHintType(hintType);
-            wordHint.setWordOfTheDay(wordOfTheDay);
-            wordHint.setText(generatedHintText);
-            wordHintRepository.save(wordHint);
+                    WordHint wordHint = new WordHint();
+                    wordHint.setHintType(hintType);
+                    wordHint.setWordOfTheDay(wordOfTheDay);
+                    wordHint.setText(generatedHintText);
+                    wordHintRepository.save(wordHint);
+                }
+            } catch (DataIntegrityViolationException e) {
+                logger.warn("Concurrent creation detected: Hint already exists for word '{}' and type '{}'. Skipping.",
+                        wordOfTheDay.getSolutionWord(), hintType.getHintType(), e);
+            } catch (Exception e) {
+                logger.error("Unexpected error while generating hint for type '{}': {}", hintType.getHintType(), e.getMessage(), e);
+                throw new RuntimeException("Hint generation failed. Please try again later.");
+            }
         }
     }
 
@@ -74,40 +89,38 @@ public class WordHintServiceImpl implements WordHintService {
     public GetHintResponseDto getHintForHintType(String hintTypeStr, Long userId) {
         GameSession session = getValidGameSession(userId);
 
-        if(session.getStatus() == GameStatus.WON || session.getStatus() == GameStatus.LOST){
+        if (session.getStatus() == GameStatus.WON || session.getStatus() == GameStatus.LOST) {
             throw new CanNotUseHintException("Game has ended for today, come back tomorrow!");
         }
 
         validateLives(session);
         validateHintUsageLimit(userId);
+
         WordOfTheDay word = getTodayWordOfTheDay();
-        HintType hintType = getHintType(hintTypeStr);
+        HintType hintType = getHintType(hintTypeStr.trim());
         ensureHintNotUsed(session, hintType);
 
         WordHint wordHint = getWordHint(word, hintType);
 
-        if(wordHint.getText().isEmpty()){
-            throw new HintDoesNotExistsException("No valid hints found!");
+        if (wordHint.getText() == null || wordHint.getText().isBlank()) {
+            throw new HintDoesNotExistsException("No valid hint text found!");
         }
 
         deductLife(session);
         saveHintUsage(session, wordHint);
 
-        GetHintResponseDto getHintResponseDto = new GetHintResponseDto();
-        getHintResponseDto.setHintText(wordHint.getText());
-        getHintResponseDto.setRemainingLives(session.getRemainingLives());
-
-        return getHintResponseDto;
+        GetHintResponseDto hintResponseDto = new GetHintResponseDto();
+        hintResponseDto.setHintText(wordHint.getText());
+        hintResponseDto.setRemainingLives(session.getRemainingLives());
+        return hintResponseDto;
     }
 
     // ---------------------- Private Helpers ---------------------------- //
 
     private void validateWordOfTheDayExists(WordOfTheDay wordOfTheDay) {
-        if (!wordOfTheDayRepository
-                .existsBySolutionWordIgnoreCase(wordOfTheDay.getSolutionWord())
-                .orElse(false)) {
-            throw new WordDoesNotExistsException("Word of the day does not exist");
-        }
+        wordOfTheDay = wordOfTheDayRepository.findByGeneratedAt(LocalDate.now())
+                .orElseThrow(() -> new WordDoesNotExistsException("Today's word not found"));
+
     }
 
     private List<HintType> fetchAllHintTypes() {
@@ -118,14 +131,6 @@ public class WordHintServiceImpl implements WordHintService {
         return hintTypes;
     }
 
-    private void ensureHintNotExists(WordOfTheDay word, HintType type) {
-        if (wordHintRepository.findByWordOfTheDayAndHintType(word, type).isPresent()) {
-            throw new HintAlreadyExists(
-                    "Hint for type " + type.getHintType() + " already exists for this word"
-            );
-        }
-    }
-
     private GameSession getValidGameSession(Long userId) {
         return gameSessionRepository
                 .findByUserIdAndGameDate(userId, LocalDate.now())
@@ -133,7 +138,8 @@ public class WordHintServiceImpl implements WordHintService {
     }
 
     private void validateLives(GameSession session) {
-        if (session.getRemainingLives() < MIN_REMAINING_LIVES_TO_USE_HINT) {
+        if (session.getRemainingLives() < MIN_REMAINING_LIVES_TO_USE_HINT ||
+                session.getRemainingLives() < LIFE_COST_PER_HINT) {
             throw new CanNotUseHintException("Not enough lives remaining!");
         }
     }
@@ -168,7 +174,11 @@ public class WordHintServiceImpl implements WordHintService {
     }
 
     private void deductLife(GameSession session) {
-        session.setRemainingLives(session.getRemainingLives() - LIFE_COST_PER_HINT);
+        int newLives = session.getRemainingLives() - LIFE_COST_PER_HINT;
+        if (newLives < 0) {
+            throw new CanNotUseHintException("Lives cannot go below zero");
+        }
+        session.setRemainingLives(newLives);
         session.setUpdatedAt(LocalDateTime.now());
         gameSessionRepository.save(session);
     }
@@ -181,4 +191,3 @@ public class WordHintServiceImpl implements WordHintService {
         hintRepository.save(hint);
     }
 }
-
