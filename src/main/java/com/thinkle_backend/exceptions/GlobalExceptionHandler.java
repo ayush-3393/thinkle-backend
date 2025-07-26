@@ -16,91 +16,91 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HintTypeAlreadyExistsException.class)
     public ResponseEntity<BaseResponse<Void>> handleHintTypeAlreadyExists(HintTypeAlreadyExistsException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @ExceptionHandler(HintTypeDoesNotExistsException.class)
     public ResponseEntity<BaseResponse<Void>> handleHintTypeDoesNotExists(HintTypeDoesNotExistsException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @ExceptionHandler(HintTypeAlreadyDeletedException.class)
     public ResponseEntity<BaseResponse<Void>> handleHintTypeAlreadyDeleted(HintTypeAlreadyDeletedException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @ExceptionHandler(HintTypeAlreadyActiveException.class)
     public ResponseEntity<BaseResponse<Void>> handleHintTypeAlreadyActive(HintTypeAlreadyActiveException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @ExceptionHandler(AiMessageParserException.class)
     public ResponseEntity<BaseResponse<Void>> handleAiMessageParser(AiMessageParserException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @ExceptionHandler(WordAlreadyExistsException.class)
     public ResponseEntity<BaseResponse<Void>> handleWordAlreadyExists(WordAlreadyExistsException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @ExceptionHandler(InvalidWordException.class)
     public ResponseEntity<BaseResponse<Void>> handleInvalidWord(InvalidWordException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.NOT_ACCEPTABLE);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @ExceptionHandler(WordDoesNotExistsException.class)
     public ResponseEntity<BaseResponse<Void>> handleWordDoesNotExist(WordDoesNotExistsException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @ExceptionHandler(HintAlreadyExists.class)
     public ResponseEntity<BaseResponse<Void>> handleHintAlreadyExists(HintAlreadyExists ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @ExceptionHandler(GameSessionNotFoundException.class)
     public ResponseEntity<BaseResponse<Void>> handleGameSessionNotFound(GameSessionNotFoundException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @ExceptionHandler(CanNotUseHintException.class)
     public ResponseEntity<BaseResponse<Void>> handleCanNotUseHint(CanNotUseHintException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @ExceptionHandler(HintDoesNotExistsException.class)
     public ResponseEntity<BaseResponse<Void>> handleHintDoesNotExist(HintDoesNotExistsException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<BaseResponse<Void>> handleUserNotFound(UserNotFoundException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @ExceptionHandler(CanNotSubmitGuessException.class)
     public ResponseEntity<BaseResponse<Void>> handleCanNotSubmitGuess(CanNotSubmitGuessException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @ExceptionHandler(AiResponseNotGeneratedException.class)
     public ResponseEntity<BaseResponse<Void>> handleAiResponseNotGenerated(AiResponseNotGeneratedException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @ExceptionHandler(Exception.class)
