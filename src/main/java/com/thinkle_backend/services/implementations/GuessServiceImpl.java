@@ -145,6 +145,8 @@ public class GuessServiceImpl implements GuessService {
         dto.setMissedPositions(utils.getMissedPositionsOfGuessedWord());
         dto.setAiResponse(reply);
         dto.setGuessedWord(guess.getGuessedWord());
+        dto.setRemainingLives(gameSession.getRemainingLives());
+        dto.setGameStatus(gameSession.getStatus());
         return dto;
     }
 

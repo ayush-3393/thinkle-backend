@@ -1,10 +1,7 @@
 package com.thinkle_backend.services.implementations;
 
 import com.thinkle_backend.dtos.requests.GameSessionRequestDto;
-import com.thinkle_backend.dtos.responses.GameSessionResponseDto;
-import com.thinkle_backend.dtos.responses.GuessResponseDto;
-import com.thinkle_backend.dtos.responses.HintDetails;
-import com.thinkle_backend.dtos.responses.HintsInfoForSession;
+import com.thinkle_backend.dtos.responses.*;
 import com.thinkle_backend.exceptions.GameSessionNotFoundException;
 import com.thinkle_backend.exceptions.UserNotFoundException;
 import com.thinkle_backend.models.*;
@@ -21,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-
 @Service
 public class GameSessionServiceImpl implements GameSessionService {
 
@@ -32,17 +28,20 @@ public class GameSessionServiceImpl implements GameSessionService {
     private final ThinkleUsersRepository thinkleUsersRepository;
     private final HintRepository hintRepository;
     private final WordOfTheDayService wordOfTheDayService;
+    private final HintTypeRepository hintTypeRepository;
 
     public GameSessionServiceImpl(
             GameSessionRepository gameSessionRepository,
             ThinkleUsersRepository thinkleUsersRepository,
             HintRepository hintRepository,
-            WordOfTheDayService wordOfTheDayService
+            WordOfTheDayService wordOfTheDayService,
+            HintTypeRepository hintTypeRepository
     ) {
         this.gameSessionRepository = gameSessionRepository;
         this.thinkleUsersRepository = thinkleUsersRepository;
         this.hintRepository = hintRepository;
         this.wordOfTheDayService = wordOfTheDayService;
+        this.hintTypeRepository = hintTypeRepository;
     }
 
     @Override
@@ -57,11 +56,15 @@ public class GameSessionServiceImpl implements GameSessionService {
         session.setRemainingLives(MAX_INITIAL_LIVES);
         session.setStatus(GameStatus.IN_PROGRESS);
         session.setGuesses(Collections.emptyList());
-        session.setWordOfTheDay(word);
         session.setHints(Collections.emptyList());
+        session.setWordOfTheDay(word);
 
         gameSessionRepository.save(session);
-        return buildEmptyGameSessionResponse(session);
+
+        GameSessionResponseDto response = buildEmptyGameSessionResponse(session);
+        response.setAllHintTypes(getActiveHintTypes());
+
+        return response;
     }
 
     @Override
@@ -96,7 +99,7 @@ public class GameSessionServiceImpl implements GameSessionService {
 
         HintsInfoForSession hints = new HintsInfoForSession();
         hints.setNumberOfHintsUsed(0);
-        hints.setHintDetails(Collections.emptyList());
+        hints.setUsedHintDetails(Collections.emptyList());
         response.setHintsInfo(hints);
 
         return response;
@@ -108,6 +111,8 @@ public class GameSessionServiceImpl implements GameSessionService {
         response.setRemainingLives(session.getRemainingLives());
         response.setGuesses(mapGuesses(session.getGuesses()));
         response.setHintsInfo(buildHintsInfo(session.getUser().getId(), session.getGameDate()));
+        response.setAllHintTypes(getActiveHintTypes());
+
         return response;
     }
 
@@ -136,8 +141,23 @@ public class GameSessionServiceImpl implements GameSessionService {
 
         HintsInfoForSession info = new HintsInfoForSession();
         info.setNumberOfHintsUsed(details.size());
-        info.setHintDetails(details);
+        info.setUsedHintDetails(details);
         return info;
     }
-}
 
+    private List<HintTypeResponseDto> getActiveHintTypes() {
+        List<HintType> hintTypes = this.hintTypeRepository.findAll();
+        List<HintTypeResponseDto> hintTypeResponseDtoList = new ArrayList<>();
+
+        for (HintType hintType : hintTypes) {
+            if (Boolean.FALSE.equals(hintType.getIsDeleted())) {
+                HintTypeResponseDto responseDto = new HintTypeResponseDto();
+                responseDto.setType(hintType.getHintType());
+                responseDto.setDisplayName(hintType.getDisplayName());
+                hintTypeResponseDtoList.add(responseDto);
+            }
+        }
+
+        return hintTypeResponseDtoList;
+    }
+}

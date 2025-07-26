@@ -1,6 +1,7 @@
 package com.thinkle_backend.exceptions;
 
 import com.thinkle_backend.ai.exceptions.AiMessageParserException;
+import com.thinkle_backend.ai.exceptions.AiResponseNotGeneratedException;
 import com.thinkle_backend.dtos.responses.BaseResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -92,6 +93,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CanNotSubmitGuessException.class)
     public ResponseEntity<BaseResponse<Void>> handleCanNotSubmitGuess(CanNotSubmitGuessException ex) {
+        BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(AiResponseNotGeneratedException.class)
+    public ResponseEntity<BaseResponse<Void>> handleAiResponseNotGenerated(AiResponseNotGeneratedException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }

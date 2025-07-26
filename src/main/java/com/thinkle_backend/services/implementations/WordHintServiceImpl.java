@@ -1,8 +1,10 @@
 package com.thinkle_backend.services.implementations;
 
 import com.thinkle_backend.ai.features.hintGenerator.HintGenerator;
+import com.thinkle_backend.dtos.responses.GetHintResponseDto;
 import com.thinkle_backend.exceptions.*;
 import com.thinkle_backend.models.*;
+import com.thinkle_backend.models.enums.GameStatus;
 import com.thinkle_backend.repositories.*;
 import com.thinkle_backend.services.WordHintService;
 import jakarta.transaction.Transactional;
@@ -69,8 +71,12 @@ public class WordHintServiceImpl implements WordHintService {
 
     @Override
     @Transactional
-    public String getHintForHintType(String hintTypeStr, Long userId) {
+    public GetHintResponseDto getHintForHintType(String hintTypeStr, Long userId) {
         GameSession session = getValidGameSession(userId);
+
+        if(session.getStatus() == GameStatus.WON || session.getStatus() == GameStatus.LOST){
+            throw new CanNotUseHintException("Game has ended for today, come back tomorrow!");
+        }
 
         validateLives(session);
         validateHintUsageLimit(userId);
@@ -79,10 +85,19 @@ public class WordHintServiceImpl implements WordHintService {
         ensureHintNotUsed(session, hintType);
 
         WordHint wordHint = getWordHint(word, hintType);
+
+        if(wordHint.getText().isEmpty()){
+            throw new HintDoesNotExistsException("No valid hints found!");
+        }
+
         deductLife(session);
         saveHintUsage(session, wordHint);
 
-        return wordHint.getText();
+        GetHintResponseDto getHintResponseDto = new GetHintResponseDto();
+        getHintResponseDto.setHintText(wordHint.getText());
+        getHintResponseDto.setRemainingLives(session.getRemainingLives());
+
+        return getHintResponseDto;
     }
 
     // ---------------------- Private Helpers ---------------------------- //

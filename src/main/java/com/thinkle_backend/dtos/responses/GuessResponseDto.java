@@ -1,5 +1,6 @@
 package com.thinkle_backend.dtos.responses;
 
+import com.thinkle_backend.models.enums.GameStatus;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,4 +15,6 @@ public class GuessResponseDto {
     private List<Integer> correctPositions;
     private List<Integer> missedPositions;
     private String aiResponse;
+    private Integer remainingLives;
+    private GameStatus gameStatus;
 }

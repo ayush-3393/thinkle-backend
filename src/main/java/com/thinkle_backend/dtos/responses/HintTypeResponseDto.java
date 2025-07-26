@@ -7,7 +7,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @Setter
-public class CreateHintTypeResponseDto {
+public class HintTypeResponseDto {
     private String type;
     private String displayName;
 }

@@ -1,5 +1,6 @@
 package com.thinkle_backend.ai.features.hintGenerator;
 
+import com.thinkle_backend.ai.exceptions.AiResponseNotGeneratedException;
 import com.thinkle_backend.ai.messageParser.AiMessageParser;
 import com.thinkle_backend.ai.prompts.PromptBuilder;
 import com.thinkle_backend.ai.services.AiService;
@@ -22,8 +23,13 @@ public class GenerateHintViaGemini implements HintGenerator{
 
     @Override
     public String generateHint(String solutionWord, String hintType) {
-        String geminiResponse =
-                this.aiService.getAnswer(this.promptBuilder.generateHintPrompt(solutionWord, hintType));
-        return this.aiMessageParser.extractText(geminiResponse);
+        try {
+            String geminiResponse =
+                    this.aiService.getAnswer(this.promptBuilder.generateHintPrompt(solutionWord, hintType));
+            return this.aiMessageParser.extractText(geminiResponse);
+        }
+        catch (Exception e){
+            throw new AiResponseNotGeneratedException("Hint could not be generated!");
+        }
     }
 }
