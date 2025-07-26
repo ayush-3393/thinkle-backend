@@ -87,7 +87,7 @@ public class WordHintServiceImpl implements WordHintService {
         WordHint wordHint = getWordHint(word, hintType);
 
         if(wordHint.getText().isEmpty()){
-            throw new HintDoesNotExistsException("No valid hints founds!");
+            throw new HintDoesNotExistsException("No valid hints found!");
         }
 
         deductLife(session);
