@@ -9,4 +9,5 @@ import lombok.Setter;
 @Getter
 public class GetHintResponseDto {
     private String hintText;
+    private Integer remainingLives;
 }

@@ -1,6 +1,7 @@
 package com.thinkle_backend.dtos.responses;
 
 import com.thinkle_backend.models.Guess;
+import com.thinkle_backend.models.HintType;
 import com.thinkle_backend.models.enums.GameStatus;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,4 +17,5 @@ public class GameSessionResponseDto {
     private GameStatus gameStatus;
     private HintsInfoForSession hintsInfo;
     private List<GuessResponseDto> guesses;
+    private List<HintTypeResponseDto> allHintTypes;
 }

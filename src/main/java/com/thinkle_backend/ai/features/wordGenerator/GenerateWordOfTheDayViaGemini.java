@@ -3,6 +3,7 @@ package com.thinkle_backend.ai.features.wordGenerator;
 import com.thinkle_backend.ai.messageParser.AiMessageParser;
 import com.thinkle_backend.ai.prompts.PromptBuilder;
 import com.thinkle_backend.ai.services.AiService;
+import com.thinkle_backend.utils.WordUtils;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,7 +23,12 @@ public class GenerateWordOfTheDayViaGemini implements WordOfTheDayGenerator{
 
     @Override
     public String generateWordOfTheDay() {
-        String geminiResponse = this.aiService.getAnswer(this.promptBuilder.generateWordPrompt());
-        return this.aiMessageParser.extractText(geminiResponse);
+        try {
+            String geminiResponse = this.aiService.getAnswer(this.promptBuilder.generateWordPrompt());
+            return this.aiMessageParser.extractText(geminiResponse);
+        }
+        catch (Exception e){
+            return WordUtils.getRandomLocalWord();
+        }
     }
 }

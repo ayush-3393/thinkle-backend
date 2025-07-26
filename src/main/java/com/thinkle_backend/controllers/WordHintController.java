@@ -23,12 +23,10 @@ public class WordHintController {
     public ResponseEntity<BaseResponse<GetHintResponseDto>> getHintForHintType(
             @Valid @RequestBody GetHintRequestDto getHintRequestDto
     ){
-        String hintForHintType =
+        GetHintResponseDto responseDto =
                 this.wordHintService.getHintForHintType(
                         getHintRequestDto.getHintType(), getHintRequestDto.getUserId()
                 );
-        GetHintResponseDto responseDto = new GetHintResponseDto();
-        responseDto.setHintText(hintForHintType);
         return ResponseEntity.ok(BaseResponse.success(responseDto));
     }
 }

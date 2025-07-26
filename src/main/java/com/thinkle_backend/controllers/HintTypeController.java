@@ -5,7 +5,7 @@ import com.thinkle_backend.dtos.requests.DeleteHintTypeRequestDto;
 import com.thinkle_backend.dtos.requests.ReActivateHintTypeRequestDto;
 import com.thinkle_backend.dtos.requests.UpdateHintTypeRequestDto;
 import com.thinkle_backend.dtos.responses.BaseResponse;
-import com.thinkle_backend.dtos.responses.CreateHintTypeResponseDto;
+import com.thinkle_backend.dtos.responses.HintTypeResponseDto;
 import com.thinkle_backend.dtos.responses.UpdateHintTypeResponseDto;
 import com.thinkle_backend.models.HintType;
 import com.thinkle_backend.services.HintTypeService;
@@ -26,15 +26,15 @@ public class HintTypeController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<BaseResponse<CreateHintTypeResponseDto>> createHintType(
+    public ResponseEntity<BaseResponse<HintTypeResponseDto>> createHintType(
             @Valid @RequestBody CreateHintTypeRequestDto createHintTypeRequestDto
             ){
         HintType hintType = this.hintTypeService.createHintType(createHintTypeRequestDto);
-        CreateHintTypeResponseDto responseDto = new CreateHintTypeResponseDto();
+        HintTypeResponseDto responseDto = new HintTypeResponseDto();
         responseDto.setType(hintType.getHintType());
         responseDto.setDisplayName(hintType.getDisplayName());
 
-        return new ResponseEntity<BaseResponse<CreateHintTypeResponseDto>>(
+        return new ResponseEntity<BaseResponse<HintTypeResponseDto>>(
                 BaseResponse.success(responseDto),
                 HttpStatus.CREATED
         );

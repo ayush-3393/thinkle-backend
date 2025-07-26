@@ -1,5 +1,6 @@
 package com.thinkle_backend.ai.features.replyToGuesses;
 
+import com.thinkle_backend.ai.exceptions.AiResponseNotGeneratedException;
 import com.thinkle_backend.ai.messageParser.AiMessageParser;
 import com.thinkle_backend.ai.prompts.PromptBuilder;
 import com.thinkle_backend.ai.services.AiService;
@@ -27,9 +28,14 @@ public class GenerateReplyToGuessesViaGemini implements ReplyToGuessesGenerator{
                                                 GameStatus gameStatus,
                                                 Integer remainingLives,
                                                 Long hintsUsed) {
-        String geminiResponse = this.aiService.getAnswer(this.promptBuilder.generateReplyForCurrentGuess(
-                currentGuess, wordToGuess, gameStatus, remainingLives, hintsUsed)
-        );
-        return this.aiMessageParser.extractText(geminiResponse);
+        try {
+            String geminiResponse = this.aiService.getAnswer(this.promptBuilder.generateReplyForCurrentGuess(
+                    currentGuess, wordToGuess, gameStatus, remainingLives, hintsUsed)
+            );
+            return this.aiMessageParser.extractText(geminiResponse);
+        }
+        catch (Exception e){
+            throw new AiResponseNotGeneratedException("Ai response could not be generated!");
+        }
     }
 }
