@@ -43,11 +43,13 @@ public class GuessServiceImpl implements GuessService {
     private final ReplyToGuessesGenerator replyToGuessesGenerator;
     private final HintRepository hintRepository;
 
-    public GuessServiceImpl(GuessRepository guessRepository,
-                            WordOfTheDayRepository wordOfTheDayRepository,
-                            GameSessionRepository gameSessionRepository,
-                            ReplyToGuessesGenerator replyToGuessesGenerator,
-                            HintRepository hintRepository) {
+    public GuessServiceImpl(
+            GuessRepository guessRepository,
+            WordOfTheDayRepository wordOfTheDayRepository,
+            GameSessionRepository gameSessionRepository,
+            ReplyToGuessesGenerator replyToGuessesGenerator,
+            HintRepository hintRepository
+    ) {
         this.guessRepository = guessRepository;
         this.wordOfTheDayRepository = wordOfTheDayRepository;
         this.gameSessionRepository = gameSessionRepository;
@@ -61,14 +63,14 @@ public class GuessServiceImpl implements GuessService {
         validateGuessWord(guessRequestDto.getGuessedWord());
 
         GameSession gameSession = getActiveGameSession(guessRequestDto.getUserId());
-
         WordOfTheDay wordOfTheDay = getTodayWordOfTheDay();
 
         GuessUtils guessUtils = new GuessUtils(wordOfTheDay.getSolutionWord(), guessRequestDto.getGuessedWord());
 
         Guess savedGuess = saveGuess(guessRequestDto, gameSession, guessUtils);
 
-        updateGameStatus(gameSession, guessRequestDto.getGuessedWord(), guessUtils);
+        // update status AFTER guess is saved to keep count accurate
+        updateGameStatus(gameSession, guessUtils);
 
         Long hintCount = getHintCount(guessRequestDto.getUserId());
 
@@ -77,29 +79,29 @@ public class GuessServiceImpl implements GuessService {
 
     private void validateGuessWord(String guessedWord) {
         if (!WordUtils.isValidWord(guessedWord, MAX_WORD_LENGTH)) {
-            throw new InvalidWordException("Invalid Guess Word: " + guessedWord + " with max length " + MAX_WORD_LENGTH);
+            throw new InvalidWordException("Invalid word guessed: " + guessedWord);
         }
     }
 
     private GameSession getActiveGameSession(Long userId) {
-        GameSession gameSession = gameSessionRepository
+        return gameSessionRepository
                 .findByUserIdAndGameDate(userId, LocalDate.now())
-                .orElseThrow(() -> new GameSessionNotFoundException(
-                        "Game session not found for userId: " + userId));
-
-        if (gameSession.getStatus() == GameStatus.WON) {
-            throw new CanNotSubmitGuessException("Game already won. No more guesses allowed.");
-        }
-        if (gameSession.getStatus() == GameStatus.LOST) {
-            throw new CanNotSubmitGuessException("Game over. Better luck next time!");
-        }
-
-        return gameSession;
+                .map(session -> {
+                    if (session.getStatus() == GameStatus.WON) {
+                        throw new CanNotSubmitGuessException("Game already won today.");
+                    }
+                    if (session.getStatus() == GameStatus.LOST) {
+                        throw new CanNotSubmitGuessException("Game already lost today.");
+                    }
+                    return session;
+                })
+                .orElseThrow(() -> new GameSessionNotFoundException("No active game session for userId: " + userId));
     }
 
     private WordOfTheDay getTodayWordOfTheDay() {
-        return wordOfTheDayRepository.findByGeneratedAt(LocalDate.now())
-                .orElseThrow(() -> new WordDoesNotExistsException("Word of the day not found!"));
+        return wordOfTheDayRepository
+                .findByGeneratedAt(LocalDate.now())
+                .orElseThrow(() -> new WordDoesNotExistsException("Today's word not found."));
     }
 
     private Guess saveGuess(GuessRequestDto dto, GameSession gameSession, GuessUtils guessUtils) {
@@ -110,20 +112,22 @@ public class GuessServiceImpl implements GuessService {
         guess.setCorrectPositionIndices(guessUtils.getCorrectPositionsOfGuessedWord());
         guess.setMissedPositionIndices(guessUtils.getMissedPositionsOfGuessedWord());
 
-        Guess savedGuess = guessRepository.save(guess);
-        gameSession.getGuesses().add(savedGuess);
+        Guess saved = guessRepository.save(guess);
+        gameSession.getGuesses().add(saved);  // optional if bi-directional
 
-        return savedGuess;
+        return saved;
     }
 
-    private void updateGameStatus(GameSession gameSession, String guessedWord, GuessUtils guessUtils) {
-        boolean isCorrect = guessUtils.getCorrectPositionsOfGuessedWord().size() == guessedWord.length();
+    private void updateGameStatus(GameSession gameSession, GuessUtils guessUtils) {
+        boolean isCorrectGuess = guessUtils.getCorrectPositionsOfGuessedWord().size() == MAX_WORD_LENGTH;
 
-        if (isCorrect) {
+        if (isCorrectGuess) {
             gameSession.setStatus(GameStatus.WON);
         } else {
-            gameSession.setRemainingLives(gameSession.getRemainingLives() - LIFE_COST_PER_WRONG_GUESS);
-            if (gameSession.getRemainingLives() <= 0 || gameSession.getGuesses().size() >= MAX_GUESS_COUNT) {
+            int updatedLives = gameSession.getRemainingLives() - LIFE_COST_PER_WRONG_GUESS;
+            gameSession.setRemainingLives(updatedLives);
+
+            if (updatedLives <= 0 || gameSession.getGuesses().size() >= MAX_GUESS_COUNT) {
                 gameSession.setStatus(GameStatus.LOST);
             }
         }
@@ -135,20 +139,23 @@ public class GuessServiceImpl implements GuessService {
         return hintRepository.countByGameSession_User_IdAndGameSession_GameDate(userId, LocalDate.now());
     }
 
-    private GuessResponseDto buildResponseDto(Guess guess, GuessUtils utils, GameSession gameSession, String solution, Long hintCount) {
+    private GuessResponseDto buildResponseDto(Guess guess, GuessUtils utils, GameSession session, String solution, Long hintCount) {
         String reply = replyToGuessesGenerator.generateReplyToTheGuessedWord(
-                guess.getGuessedWord(), solution, gameSession.getStatus(), gameSession.getRemainingLives(), hintCount
+                guess.getGuessedWord(),
+                solution,
+                session.getStatus(),
+                session.getRemainingLives(),
+                hintCount
         );
 
         GuessResponseDto dto = new GuessResponseDto();
+        dto.setGuessedWord(guess.getGuessedWord());
         dto.setCorrectPositions(utils.getCorrectPositionsOfGuessedWord());
         dto.setMissedPositions(utils.getMissedPositionsOfGuessedWord());
+        dto.setRemainingLives(session.getRemainingLives());
+        dto.setGameStatus(session.getStatus());
         dto.setAiResponse(reply);
-        dto.setGuessedWord(guess.getGuessedWord());
-        dto.setRemainingLives(gameSession.getRemainingLives());
-        dto.setGameStatus(gameSession.getStatus());
+
         return dto;
     }
-
-
 }

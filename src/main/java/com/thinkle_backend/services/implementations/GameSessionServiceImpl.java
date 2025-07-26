@@ -55,8 +55,8 @@ public class GameSessionServiceImpl implements GameSessionService {
         session.setGameDate(LocalDate.now());
         session.setRemainingLives(MAX_INITIAL_LIVES);
         session.setStatus(GameStatus.IN_PROGRESS);
-        session.setGuesses(Collections.emptyList());
-        session.setHints(Collections.emptyList());
+        session.setGuesses(new ArrayList<>());
+        session.setHints(new ArrayList<>());
         session.setWordOfTheDay(word);
 
         gameSessionRepository.save(session);

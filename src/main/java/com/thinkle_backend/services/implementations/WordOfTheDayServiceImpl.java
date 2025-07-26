@@ -10,6 +10,7 @@ import com.thinkle_backend.services.WordOfTheDayService;
 import com.thinkle_backend.utils.WordUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -36,29 +37,27 @@ public class WordOfTheDayServiceImpl implements WordOfTheDayService {
     @Override
     @Transactional
     public WordOfTheDay generateWordOfTheDay() {
+        Optional<WordOfTheDay> existing = wordOfTheDayRepository.findByGeneratedAt(LocalDate.now());
+        if (existing.isPresent()) return existing.get();
 
-        Optional<WordOfTheDay> wordOfTheDayOptional =
-                this.wordOfTheDayRepository.findByGeneratedAt(LocalDate.now());
-
-        if(wordOfTheDayOptional.isPresent()){
-            return wordOfTheDayOptional.get();
+        String word = wordOfTheDayGenerator.generateWordOfTheDay();
+        if (!WordUtils.isValidWord(word, MAX_WORD_LENGTH)) {
+            throw new InvalidWordException("Invalid word: " + word);
         }
 
-        String generateWordOfTheDay = this.wordOfTheDayGenerator.generateWordOfTheDay();
+        WordOfTheDay entity = new WordOfTheDay();
+        entity.setSolutionWord(word.trim().toUpperCase());
+        entity.setGeneratedAt(LocalDate.now());
 
-        if(!WordUtils.isValidWord(generateWordOfTheDay, MAX_WORD_LENGTH)){
-            throw new InvalidWordException("Invalid Word Generated!: " + generateWordOfTheDay);
+        try {
+            WordOfTheDay saved = wordOfTheDayRepository.save(entity);
+            wordHintService.createHintsForWordOfTheDay(saved);
+            return saved;
+        } catch (DataIntegrityViolationException ex) {
+            // Another thread inserted it first, fetch it instead
+            return wordOfTheDayRepository.findByGeneratedAt(LocalDate.now())
+                    .orElseThrow(() -> new RuntimeException("Race condition occurred, and fallback failed."));
         }
-
-        WordOfTheDay wordOfTheDay = new WordOfTheDay();
-        wordOfTheDay.setSolutionWord(generateWordOfTheDay.trim().toUpperCase());
-        wordOfTheDay.setGeneratedAt(LocalDate.now());
-
-        WordOfTheDay savedWordOfTheDay = this.wordOfTheDayRepository.save(wordOfTheDay);
-
-        // generate the hints for the word
-        this.wordHintService.createHintsForWordOfTheDay(savedWordOfTheDay);
-
-        return savedWordOfTheDay;
     }
+
 }
