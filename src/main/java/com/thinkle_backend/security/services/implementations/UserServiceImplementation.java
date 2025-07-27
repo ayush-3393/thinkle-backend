@@ -81,11 +81,6 @@ public class UserServiceImplementation implements UserService {
         } catch (DataIntegrityViolationException e) {
             log.error("Database constraint violation during signup", e);
             throw new DuplicateResourceException("User with this email or username already exists");
-        } catch (DuplicateResourceException e) {
-            // Let it propagate as is
-            throw e;
-        } catch (IllegalArgumentException e) {
-            throw e;
         } catch (Exception e) {
             log.error("Unexpected error during signup for email: {}", signUpRequest.getEmail(), e);
             throw new RuntimeException("Registration failed. Please try again later.", e);

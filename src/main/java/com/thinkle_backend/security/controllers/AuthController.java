@@ -1,14 +1,12 @@
 package com.thinkle_backend.security.controllers;
 
 import com.thinkle_backend.dtos.responses.BaseResponse;
-import com.thinkle_backend.dtos.responses.GuessResponseDto;
 import com.thinkle_backend.security.dtos.AuthResponse;
 import com.thinkle_backend.security.dtos.LoginRequest;
 import com.thinkle_backend.security.dtos.SignUpRequest;
 import com.thinkle_backend.security.services.UserService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

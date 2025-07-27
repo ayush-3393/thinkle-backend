@@ -28,10 +28,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
-    @Autowired
     private final JwtService jwtService;
 
-    @Autowired
     private final CustomUserDetailsService customUserDetailsService;
 
     // Public endpoints that should skip JWT validation
