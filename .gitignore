@@ -34,3 +34,6 @@ build/
 
 ### Prompts ###
 /src/main/resources/prompts/
+
+# mac-os ds files
+**/.DS_Store
