@@ -1,19 +1,16 @@
 package com.thinkle_backend.security.configs;
 
 import com.thinkle_backend.security.services.CustomUserDetailsService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -39,17 +36,17 @@ public class SecurityConfigs {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                // Remove this line temporarily
-                // .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // UNCOMMENTED
                 .authorizeHttpRequests(request -> request
                         .requestMatchers(
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/error"
                         ).permitAll()
-                        .requestMatchers("/api/session/**").authenticated()
-                        .requestMatchers("/api/guess/**").authenticated()
-                        .requestMatchers("/api/hints/**").authenticated()
+                        .requestMatchers("/game/**").authenticated()      // UPDATED
+                        .requestMatchers("/guess/**").authenticated()     // UPDATED
+                        .requestMatchers("/hints/**").authenticated()     // UPDATED
+                        .requestMatchers("/hint-types/**").authenticated() // UPDATED
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session ->
