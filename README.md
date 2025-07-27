@@ -18,20 +18,13 @@ https://github.com/user-attachments/assets/a29562da-961f-4885-9d0b-132cc01257e7
 ---
 
 ## 🛠 Technologies Used
-
-- Java  
-- Spring Boot  
-- PostgresSQL  
-- JPA / Hibernate  
-- Spring Security  
-- Maven  
-- Integration with **Google's Gemini AI**
-
----
-
-## 🚀 Features
-
-### 🔐 Authentication
+- **Java** - Robust, object-oriented programming language
+- **Spring Boot** - Enterprise-grade framework for rapid application development
+- **PostgresSQL** - Advanced open-source relational database---
+- **JPA/Hibernate** - Object-relational mapping for database operations
+- **Spring Security** - Comprehensive security framework for authentication & authorization## 🚀 Features
+- **Maven** - Dependency management and build automation
+- **Google Gemini AI** - Advanced AI integration for word generation and hints### 🔐 Authentication
 
 - Secure **Signup/Login** using **Spring Security** and **JWT tokens**
 - JWT tokens expire after **24 hours**
