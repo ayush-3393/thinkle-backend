@@ -3,6 +3,10 @@ package com.thinkle_backend.exceptions;
 import com.thinkle_backend.ai.exceptions.AiMessageParserException;
 import com.thinkle_backend.ai.exceptions.AiResponseNotGeneratedException;
 import com.thinkle_backend.dtos.responses.BaseResponse;
+import com.thinkle_backend.security.exceptions.DuplicateResourceException;
+import com.thinkle_backend.security.exceptions.InvalidTokenException;
+import com.thinkle_backend.security.exceptions.ResourceNotFoundException;
+import com.thinkle_backend.security.exceptions.UnauthorizedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -101,6 +105,30 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseResponse<Void>> handleAiResponseNotGenerated(AiResponseNotGeneratedException ex) {
         BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<BaseResponse<Void>> handleInvalidToken(InvalidTokenException ex) {
+        BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<BaseResponse<Void>> handleDuplicateResource(DuplicateResourceException ex) {
+        BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<BaseResponse<Void>> handleResourceNotFound(ResourceNotFoundException ex) {
+        BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<BaseResponse<Void>> handleUnAuthorization(UnauthorizedException ex) {
+        BaseResponse<Void> response = BaseResponse.failure(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler(Exception.class)
