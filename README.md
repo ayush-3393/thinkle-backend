@@ -30,6 +30,14 @@ https://github.com/user-attachments/assets/a29562da-961f-4885-9d0b-132cc01257e7
 - JWT tokens expire after **24 hours**
 
 ---
+## 🚀 Features
+
+### 🔐 Authentication
+
+- Secure **Signup/Login** using **Spring Security** and **JWT tokens**
+- JWT tokens expire after **24 hours**
+
+---
 
 ### 🕹 Game Sessions
 
@@ -67,6 +75,9 @@ https://github.com/user-attachments/assets/a29562da-961f-4885-9d0b-132cc01257e7
 ---
 
 Enjoy Thinkle, where guessing meets AI-powered fun! 🚀
+
+---
+
 
 
 
